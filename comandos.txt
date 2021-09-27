@@ -1,0 +1,4 @@
+cd /usr/local/MobileSim/MobileSim -m feec.map
+sudo service restthru start
+
+chromium http://localhost:4950/web/

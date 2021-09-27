@@ -1,0 +1,511 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd"> 
+<html lang="pt">
+
+<head>
+   <title>Navegação por Ações</title>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+   <script type='text/javascript' charset='ISO-8859-1' src='util.js'></script>
+
+<script language="javascript" type="text/javascript">
+
+var robotUrl = "";
+function initActions() {
+  robotUrl = location.href;
+  var iweb = robotUrl.indexOf("web");
+  if(iweb >= 0) robotUrl = robotUrl.substr(0, iweb);
+}
+
+
+// para o robo
+function stopRobotAction() {
+  var ajaxRequest = createRequest();
+  var message = "motion/stop";
+  ajaxRequest.onreadystatechange = function() {
+    if(ajaxRequest.readyState == 4 && ajaxRequest.status == 200) {
+      alert("Sucesso");
+      return;
+      }
+  }
+
+  ajaxRequest.open("PUT", robotUrl + message, true);
+  ajaxRequest.send(null);
+}
+
+// remove todas as acoes
+function removeAllActions() {
+  var ajaxRequest = createRequest();
+  var message = "behaviour/all";
+
+  ajaxRequest.onreadystatechange = function() {
+    if(ajaxRequest.readyState == 4 && ajaxRequest.status == 200) {
+    // alert("Sucesso");
+      return;
+      }
+  }
+
+  ajaxRequest.open("DELETE", robotUrl + message, true);
+  ajaxRequest.send(null);
+}
+
+
+// envia acao
+var acoesEnviadas = 0;
+var acoesPendentes = 0;
+var falhaComunic = false;
+
+function sendAction(index, npar) {
+  var ajaxRequest = createRequest();
+  var act, par, value, payload;
+  // nome acao
+  switch(index) {
+    case 1: act = "avoidFront";
+            payload = '{"avoidFront": {"obstacleDistance": ' + 
+                        document.getElementById("p11").value + 
+                        ', "avoidVelocity": ' + 
+                        document.getElementById("p12").value + 
+                        ', "turnAmount": ' + 
+                        document.getElementById("p13").value + 
+                        ', "priority": ' + 
+                        document.getElementById("prio1").value + '}}';
+            break;
+    case 2: act = "avoidSide";
+            payload = '{"avoidSide": {"obstacleDistance": ' + 
+                        document.getElementById("p21").value + 
+                        ', "turnAmount": ' + 
+                        document.getElementById("p22").value + 
+                        ', "priority": ' + 
+                        document.getElementById("prio2").value + '}}';
+            break;
+    case 3: act = "bumpers";
+            payload = '{"bumpers": {"backOffSpeed": ' + 
+                        document.getElementById("p31").value + 
+                        ', "backOffTime": ' + 
+                        document.getElementById("p32").value + 
+                        ', "turnTime": ' + 
+                        document.getElementById("p33").value + 
+                        ', "priority": ' + 
+                        document.getElementById("prio3").value + '}}';
+            break;
+    case 4: act = "stallRecover"; 
+            payload = '{"stallRecover": {"obstacleDistance": ' + 
+                        document.getElementById("p41").value + 
+                        ', "cyclesToMove": ' + 
+                        document.getElementById("p42").value + 
+                        ', "speed": ' + 
+                        document.getElementById("p43").value + 
+                        ', "degreesToTurn": ' + 
+                        document.getElementById("p44").value + 
+                        ', "priority": ' + 
+                        document.getElementById("prio4").value + '}}';
+            break;
+    case 5: act = "limiterForwards";
+            payload = '{"limiterForwards": {"stopDistance": ' + 
+                        document.getElementById("p51").value + 
+                        ', "slowDistance": ' + 
+                        document.getElementById("p52").value + 
+                        ', "slowSpeed": ' + 
+                        document.getElementById("p53").value + 
+                        ', "priority": ' + 
+                        document.getElementById("prio5").value + '}}';
+            break;
+    case 6: act = "limiterBackwards";
+            payload = '{"limiterBackwards": {"stopDistance": ' + 
+                        document.getElementById("p61").value + 
+                        ', "slowDistance": ' + 
+                        document.getElementById("p62").value + 
+                        ', "maxBackwardsSpeed": ' + 
+                        document.getElementById("p63").value + 
+                        ', "priority": ' + 
+                        document.getElementById("prio6").value + '}}';
+            break;
+    case 7: act = "constantVelocity";
+            payload = '{"constantVelocity": ' + 
+                       document.getElementById("p71").value + 
+                       ', "priority": ' + 
+                       document.getElementById("prio7").value + '}';
+            break
+    case 8: act = "ipthru";
+                       payload = null;
+            break
+    case 9: act = "goTo"; 
+            payload = '{"goTo": {"pose": {"x": ' + 
+                       document.getElementById("p91").value + 
+                       ', "y": ' + 
+                       document.getElementById("p92").value + 
+                       ', "th": ' + 
+                       document.getElementById("p93").value + '}' +
+                       ', "closeDist": ' + 
+                        document.getElementById("p94").value + 
+                       ', "speed": ' + 
+                        document.getElementById("p95").value + 
+                        ', "priority": ' + 
+                        document.getElementById("prio9").value + '}}';
+             break;
+    }
+  var message = "behaviour/" + act;
+
+  // alert(payload);
+
+  ajaxRequest.onreadystatechange = function() {
+    if(ajaxRequest.readyState == 4 && ajaxRequest.status != 200) {
+      if(falhaComunic == false) {
+        alert("Falha de comunicação com o robô");
+        falhaComunic = true;
+        }
+      return;
+      }
+    if(ajaxRequest.readyState == 4 && ajaxRequest.status == 200) {
+      acoesEnviadas++;
+      if(acoesEnviadas == acoesPendentes) alert("Sucesso");
+      }
+  }
+
+  ajaxRequest.open("PUT", robotUrl + message, true);
+  ajaxRequest.send(payload);
+}
+
+
+
+// instala as acoes
+function installActions() {
+  var lastIndex = 0;  
+  var a1 = document.getElementById("a1").checked;
+  var a2 = document.getElementById("a2").checked;
+  var a3 = document.getElementById("a3").checked;
+  var a4 = document.getElementById("a4").checked;
+  var a5 = document.getElementById("a5").checked;
+  var a6 = document.getElementById("a6").checked;
+  var a7 = document.getElementById("a7").checked;
+  var a8 = document.getElementById("a8").checked;
+  var a9 = document.getElementById("a9").checked;
+
+  var nact = 0;
+  acoesEnviadas = 0;
+  acoesPendentes = 999;
+  falhaComunic = false;
+  if(a1 == true) {sendAction(1, 3); nact++;}
+  if(a2 == true) {sendAction(2, 2); nact++;}
+  if(a3 == true) {sendAction(3, 3); nact++;}
+  if(a4 == true) {sendAction(4, 4); nact++;}
+  if(a5 == true) {sendAction(5, 3); nact++;}
+  if(a6 == true) {sendAction(6, 3); nact++;}
+  if(a7 == true) {sendAction(7, 1); nact++;}
+  if(a8 == true) {sendAction(8, 0); nact++;}
+  if(a9 == true) {sendAction(9, 4); nact++;}
+  acoesPendentes = nact;
+  if(nact == 0) alert("Selecione ao menos uma ação");
+}
+</script>
+</head>
+
+
+<body onload="initActions()">
+<form name="actionform">
+
+<div align="left">
+<font face="helvetica" size="+1" color="blue">
+<b>Navegação por Ações</b></font>
+</div>
+
+<br>
+
+<div align="left">
+<font face="helvetica" size="-1">
+<ol>
+<li> Marque a ação para ativá-la </li>
+<li> Passe o mouse sobre os parâmetros para ver seus respectivos significados </li>
+<li> Selecione os parâmetros (parâmetros recomendados são identificados por *) </li>
+<li> Após selecionar ações e parâmetros, clique no botão 'Inicia Ações'
+<li> Ao parar o robô, todas as ações são desinstaladas
+</ol>
+</font>
+</div>
+
+<br>
+
+<font face="helvetica" size="-1">
+<table  border="0" cellpadding="2" cellspacing="2">
+<tr><th></th><th>Ação</th>
+<th>Prioridade</th>
+<th>Parâmetros da Ação</th></tr>
+</font>
+
+<tr><td align="left">
+<input id="a1" type="checkbox"></td>
+<td align="left"><font face="helvetica" size="-1" color="green">Evita Colisão Frontal</font></td>
+<td align="center"><select id="prio1">
+      <option value="0">0</option>
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+      <option value="6">6</option>
+      <option value="7">7</option>
+      <option value="8" selected>8</option>
+      <option value="9">9</option></select></td>
+<td align="left"><select id="p11" title="Distância que o robô começa a girar para desviar do obstáculo a frente">
+      <option value="500" selected="true">Parâmetro 1</option>
+      <option value="500">500 mm (*)</option>
+      <option value="1000">1000 mm</option>
+      <option value="1500">1500 mm</option></select>
+<select id="p12" title="Velocidade durante o desvio do obstáculo">
+      <option value="100" selected="true">Parâmetro 2</option>
+      <option value="50">50 mm/s</option>
+      <option value="100">100 mm/s (*)</option>
+      <option value="150">150 mm/s</option>
+      <option value="200">200 mm/s</option></select>
+<select id="p13" title="Ângulo que o robô gira para desviar do obstáculo">
+      <option value="15" selected="true"> Parâmetro 3</option>
+      <option value="15">15 graus (*)</option>
+      <option value="30">30 graus</option>
+      <option value="15">45 graus</option></select></td>
+</tr>
+
+
+<tr><td align="left">
+<input id="a2" type="checkbox"></td>
+<td align="left"><font face="helvetica" size="-1" color="green">Evita Colisão Lateral</font></td>
+<td align="center"><select id="prio2">
+      <option value="0">0</option>
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+      <option value="6">6</option>
+      <option value="7">7</option>
+      <option value="8" selected>8</option>
+      <option value="9">9</option></select></td>
+<td align="left"><select id="p21" title="Distância que o robô começa a girar para desviar do obstáculo lateral">
+      <option value="200" selected="true">Parâmetro 1</option>
+      <option value="200">200 mm (*)</option>
+      <option value="300">300 mm</option>
+      <option value="400">400 mm</option>
+      <option value="500">500 mm</option></select>
+<select id="p22" title="Ângulo que o robô gira para desviar do obstáculo">
+      <option value="5" selected="true">Parâmetro 2</option>
+      <option value="5">5 graus (*)</option>
+      <option value="10">10 graus</option>
+      <option value="15">45 graus</option></select></td>
+</tr>
+
+<tr><td align="left">
+<input id="a3" type="checkbox"></td>
+<td align="left"><font face="helvetica" size="-1" color="green">Recupera de Colisão</font></td>
+<td align="center"><select id="prio3">
+      <option value="0">0</option>
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+      <option value="6">6</option>
+      <option value="7">7</option>
+      <option value="8">8</option>
+      <option value="9" selected>9</option></select></td>
+<td align="left"><select id="p31" title="Velocidade linear com que o robô se move na direção oposta da colisão">
+      <option value="100" selected="true">Parâmetro 1</option>
+      <option value="50">50 mm/s</option>
+      <option value="100">100 mm/s (*)</option>
+      <option value="150">150 mm/s</option>
+      <option value="200">200 mm/s</option></select>
+<select id="p32" title="Tempo em que o robô mantém o movimento linear na direção oposta da colisão">
+      <option value="3000" selected="true">Parâmetro 2</option>
+      <option value="3000">2 seg</option>
+      <option value="3000">3 seg (*)</option>
+      <option value="5000">5 seg</option></select>
+<select id="p33" title="Tempo permitido para o robô efetuar movimento de rotação">
+      <option value="3000" selected="true">Parâmetro 3</option>
+      <option value="3000">2 seg</option>
+      <option value="3000">3 seg (*)</option>
+      <option value="5000">5 seg</option></select></td>
+</tr>
+
+<tr><td align="left">
+<input id="a4" type="checkbox"></td>
+<td align="left"><font face="helvetica" size="-1" color="green">Recupera de Entalação<font></td>
+<td align="center"><select id="prio4">
+      <option value="0">0</option>
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+      <option value="6">6</option>
+      <option value="7" selected>7</option>
+      <option value="8">8</option>
+      <option value="9">9</option></select></td>
+<td align="left"><select id="p41" title="Distância na qual o robô não se move devido a obstáculo">
+      <option value="200" selected="true"> Parâmetro 1</option>
+      <option value="100">100 mm</option>
+      <option value="200">200 mm (*)</option>
+      <option value="300">300 mm</option>
+      <option value="400">400 mm</option></select>
+<select id="p42" title="Número de tentativas para recuperar do estado entalado" >
+      <option value="50" selected="true">Parâmetro 2</option>
+      <option value="50">50 (*)</option>
+      <option value="100">100</option>
+      <option value="150">150</option>
+      <option value="200">200</option></select>
+<select id="p43" title="Velocidade que o robô utiliza no processo de recuperação de entalação">
+      <option value="100" selected="true">Parâmetro 3</option>
+      <option value="50">50 mm/s</option>
+      <option value="100">100 mm/s (*)</option>
+      <option value="150">150 mm/s</option>
+      <option value="200">200 mm/s</option></select>
+<select id="p44" title="Ângulo que o robô gira no processo de recuperação de entalação">
+      <option value="45" selected="true">Parâmetro 4</option>
+      <option value="30">30 graus</option>
+      <option value="45">45 graus (*)</option>
+      <option value="60">60 graus</option></select></td>
+</tr>
+
+<tr><td align="left">
+<input id="a5" type="checkbox"></td>
+<td align="left"><font face="helvetica" size="-1" color="green">Limita Velocidade a Frente</font></td>
+<td align="center"><select id="prio5">
+      <option value="0">0</option>
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+      <option value="6" selected>6</option>
+      <option value="7">7</option>
+      <option value="8">8</option>
+      <option value="9">9</option></select></td>
+<td align="left"><select id="p51" title="Distância que robô pára devido a obstáculo frontal">
+      <option value="250" selected="true">Parâmetro 1</option>
+      <option value="250">250 mm (*)</option>
+      <option value="500">500 mm</option>
+      <option value="750">750 mm</option></select>
+<select id="p52" title="Distância da qual o robô inicia a redução de velocidade">
+      <option value="1000" selected="true">Parâmetro 2</option>
+      <option value="500">500 mm</option>
+      <option value="1000">1000 mm (*)</option>
+      <option value="1500">1500 mm</option></select>
+<select id="p53" title="Limite de velocidade ao atingir a velocidade estipulada no parâmetro anterior">
+      <option value="100" selected="true">Parâmetro 3</option>
+      <option value="100">100 mm/s (*)</option>
+      <option value="150">150 mm/s</option>
+      <option value="200">200 mm/s</option></select></td>
+</tr>
+
+<tr><td align="left">
+<input id="a6" type="checkbox"></td>
+<td align="left"><font face="helvetica" size="-1" color="green">Limita Velocidade Reversa</font></td>
+<td align="center"><select id="prio6">
+      <option value="0">0</option>
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+      <option value="6" selected>6</option>
+      <option value="7">7</option>
+      <option value="8">8</option>
+      <option value="9">9</option></select></td>
+<td align="left"><select id="p61" title="Distância que robô pára devido a obstáculo trazeiro">
+      <option value="-250" selected="true">Parâmetro 1</option>
+      <option value="-250">-250 mm (*)</option>
+      <option value="-500">-500 mm</option>
+      <option value="-750">-750 mm</option></select>
+<select id="p62" title="Distância da qual o robô inicia a redução de velocidade">
+      <option value="-500" selected="true">Parâmetro 2</option>
+      <option value="-500">-500 mm (*)</option>
+      <option value="-1000">-1000 mm</option>
+      <option value="-1500">-1500 mm</option></select>
+<select id="p63" title="Limite de velocidade ao atingir a velocidade estipulada no parâmetro anterior">
+      <option value="-100" selected="true">Parâmetro 3</option>
+      <option value="-100">-100 mm/s (*)</option>
+      <option value="-150">-150 mm/s</option>
+      <option value="-200">-200 mm/s</option></select></td>
+</tr>
+
+<tr><td align="left">
+<input id="a7" type="checkbox"></td>
+<td align="left"><font face="helvetica" size="-1" color="green">Move com Vel. Constante</font></td>
+<td align="center"><select id="prio7">
+      <option value="0">0</option>
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5" selected>5</option>
+      <option value="6">6</option>
+      <option value="7">7</option>
+      <option value="8">8</option>
+      <option value="9">9</option></select></td>
+<td align="left"><select id="p71" title="Velocidade linear imprimida ao robô">
+      <option value="100" selected="true">Parâmetro 1</option>
+      <option value="50">50 mm/s</option>
+      <option value="100">100 mm/s (*)</option>
+      <option value="150">150 mm/s</option>
+      <option value="200">200 mm/s</option></select></td>
+</tr>
+<tr><td align="left">
+<input id="a8" type="checkbox"></td>
+<td align="left"><font face="helvetica" size="-1" color="green">Teleoperação</font></td>
+<td align="center"><select id="prio8">
+      <option value="0">0</option>
+      <option value="1" selected>1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+      <option value="6">6</option>
+      <option value="7">7</option>
+      <option value="8">8</option>
+      <option value="9">9</option></select></td>
+</tr>
+
+<tr><td align="left">
+<input id="a9" type="checkbox"></td>
+<td align="left"><font face="helvetica" size="-1" color="green">Go To</font></td>
+<td align="center"><select id="prio9">
+      <option value="0">0</option>
+      <option value="1" selected>1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+      <option value="6">6</option>
+      <option value="7">7</option>
+      <option value="8">8</option>
+      <option value="9">9</option></select></td>
+<td align="left">P1: <input id="p91" type="text" title="Posição X" size="5">
+&nbsp; P2: <input id="p92" type="text" title="Posição Y" size="5">
+&nbsp; P3: <input id="p93" type="text" title="Orientação" size="5">
+&nbsp; <select id="p94" title="Precisão">
+      <option value="200" selected="true">Parâmetro 4</option>
+      <option value="100">100 mm</option>
+      <option value="200">200 mm (*)</option>
+      <option value="300">300 mm</option>
+      <option value="400">400 mm</option>
+      <option value="500">500 mm</option></select>
+&nbsp; <select id="p95" title="Velocidade">
+      <option value="200" selected="true">Parâmetro 5</option>
+      <option value="100">100 mm/s</option>
+      <option value="200">200 mm/s (*)</option>
+      <option value="300">300 mm/s</option>
+      <option value="400">400 mm/s</option>
+      <option value="500">500 mm/s</option></select></td>
+</tr>
+
+
+</table>
+<br>
+<input type="button" id="rem" value="Remove Todas as Ações" 
+       onclick="removeAllActions()">
+<input type="button" id="install" value="Inicia Ações"
+       onclick="installActions()">
+<input type="button" id="stop" value="Pára o Robô" 
+       onclick="stopRobotAction()">
+
+
+</form>
+</body>
+</html>
+
+
