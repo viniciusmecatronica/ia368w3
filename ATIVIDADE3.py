@@ -12,7 +12,7 @@ from normAngle import *
 
 # openMobileSim()
 
-# valores iniciais  ...
+# valores iniciais
 # host = 'http://127.0.0.1:4950' #pelo LINUX
 host = 'http://192.168.0.14:4950' #pelo WINDOWS
 posit = '/motion/pose'
